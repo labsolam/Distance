@@ -1,6 +1,10 @@
+import com.google.gson.Gson;
+
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 public class Distance {
@@ -15,37 +19,70 @@ public class Distance {
         first_location = Util.input("Please enter your first location:", "Invalid location. Please enter your first location");
         second_location = Util.input("Please enter your second location:", "Invalid location. Please enter your second location");
 
-        System.out.println(first_location + " " + second_location);
-
-        getCoordinates(first_location);
+        System.out.println(calculateDistance(first_location, second_location));
 
     }
 
-    private static void getCoordinates(String location){
+    private static String calculateDistance(String first_location, String secon_location){
+        return getCoordinates(first_location);
+    }
+
+    private static String getCoordinates(String location){
         //Get list of places (or auto select if popular result e.g. London, Paris)
         //Select place from list if not auto selected
         //Get coordinates for place
 
-        URL url;
+        location = location.replace(" ", "%20");
 
-        try {
-            url  = new URL("https://maps.googleapis.com/maps/api/place/details/json?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4&key=AIzaSyAbOlediGeU36fOE0KvSBokaZaNaLklefk");
+        URL url = null;
+        HttpURLConnection connection = null;
+        BufferedReader in = null;
 
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+        try { //TODO: Get the calling method to handle this exception
+            url  = new URL("https://maps.googleapis.com/maps/api/geocode/json?address="
+                    + location
+                    + "&key="
+                    + Secret.API); //Create your own API key and store it in the API variable
 
+            connection = (HttpURLConnection) url.openConnection();
+            in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String inputLine;
+            StringBuilder builder = new StringBuilder();
 
             while((inputLine = in.readLine()) != null){
-                System.out.println(inputLine);
+                builder.append(inputLine);
             }
 
+            Gson gson = new Gson();
+            String json = gson.toJson(builder);
+
+            return json;
+
+
+        } catch (MalformedURLException e) {
+            e.printStackTrace(); //TODO: Log to file
+            return "Fail"; //TODO: Get the calling method to handle this exception
+        } catch (IOException e) {
+            e.printStackTrace(); //TODO: Log to file
+            return "Fail"; //TODO: Get the calling method to handle this exception
         } catch (Exception e) {
-            e.printStackTrace();
-        }
-        finally {
+            e.printStackTrace(); //TODO: Log to file
+            return "Fail"; //TODO: Get the calling method to handle this exception
+        } finally {
+            if(url != null){
+                connection.disconnect();
+            }
 
+            try {
+                if(in != null){
+                    in.close();
+                }
+            } catch (IOException e) {
+                //TODO: Make a log file instead of outputting to the console
+                System.err.println("Buffered Reader IOException" + e.getMessage());
+            } catch (Exception e){
+                System.err.println("Any other Bufferered Reader Exception" + e.getMessage());
+            }
         }
-
     }
 }
