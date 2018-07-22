@@ -1,4 +1,4 @@
-import com.google.gson.Gson;
+import com.google.gson.*;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -11,23 +11,38 @@ public class Distance {
 
     public static void main(String[] args) {
 
-        String first_location;
-        String second_location;
+        String firstLocation;
+        String secondLocation;
 
         System.out.println("Welcome to Distance Checker!");
 
-        first_location = Util.input("Please enter your first location:", "Invalid location. Please enter your first location");
-        second_location = Util.input("Please enter your second location:", "Invalid location. Please enter your second location");
+        firstLocation = Util.input("Please enter your first location:", "Invalid location. Please enter your first location");
+        secondLocation = Util.input("Please enter your second location:", "Invalid location. Please enter your second location");
 
-        System.out.println(calculateDistance(first_location, second_location));
+        System.out.println(calculateDistance(firstLocation, secondLocation));
 
     }
 
-    private static String calculateDistance(String first_location, String secon_location){
-        return getCoordinates(first_location);
+    private static double calculateDistance(String firstLocation, String secondLocation){
+        double[] firstCoordinates = getCoordinates(firstLocation);
+        double[] secondCoordinates = getCoordinates(secondLocation);
+
+
+        double earth_radius = 6371; //metres
+        double changeLat = Math.toRadians(secondCoordinates[0] - firstCoordinates[0]);
+        double changeLong = Math.toRadians(secondCoordinates[1] - firstCoordinates[1]);
+        double firstLatRadians = Math.toRadians(firstCoordinates[0]);
+        double secondLatRadians = Math.toRadians(secondCoordinates[0]);
+
+        double a = Math.sin(changeLat/2) * Math.sin(changeLat/2) + Math.sin(changeLong/2) * Math.sin(changeLong/2) * Math.cos(firstLatRadians) * Math.cos(secondLatRadians);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        double d = earth_radius * c;
+
+        return d;
+
     }
 
-    private static String getCoordinates(String location){
+    private static double[] getCoordinates(String location){
         //Get list of places (or auto select if popular result e.g. London, Paris)
         //Select place from list if not auto selected
         //Get coordinates for place
@@ -53,23 +68,24 @@ public class Distance {
                 builder.append(inputLine);
             }
 
-            Gson gson = new Gson();
-            String json = gson.toJson(builder);
+            double[] coordinates = new double[2];
+            coordinates[0] = ((new JsonParser().parse(builder.toString())).getAsJsonObject().get("results")).getAsJsonArray().get(0).getAsJsonObject().get("geometry").getAsJsonObject().get("location").getAsJsonObject().get("lat").getAsDouble();
+            coordinates[1] = ((new JsonParser().parse(builder.toString())).getAsJsonObject().get("results")).getAsJsonArray().get(0).getAsJsonObject().get("geometry").getAsJsonObject().get("location").getAsJsonObject().get("lng").getAsDouble();
 
-            return json;
+            return coordinates;
 
 
         } catch (MalformedURLException e) {
             e.printStackTrace(); //TODO: Log to file
-            return "Fail"; //TODO: Get the calling method to handle this exception
+            return null; //TODO: Get the calling method to handle this exception
         } catch (IOException e) {
             e.printStackTrace(); //TODO: Log to file
-            return "Fail"; //TODO: Get the calling method to handle this exception
+            return null; //TODO: Get the calling method to handle this exception
         } catch (Exception e) {
             e.printStackTrace(); //TODO: Log to file
-            return "Fail"; //TODO: Get the calling method to handle this exception
+            return null; //TODO: Get the calling method to handle this exception
         } finally {
-            if(url != null){
+            if(connection != null){
                 connection.disconnect();
             }
 
